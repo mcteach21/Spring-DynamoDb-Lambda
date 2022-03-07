@@ -4,10 +4,12 @@ import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.document.*;
-import com.amazonaws.services.dynamodbv2.document.internal.IteratorSupport;
 import com.amazonaws.services.dynamodbv2.document.spec.ScanSpec;
 import com.amazonaws.services.dynamodbv2.document.utils.NameMap;
 import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.ScanRequest;
+import com.amazonaws.services.dynamodbv2.model.ScanResult;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -16,35 +18,40 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
-public class GetCustomersHandler implements RequestHandler<Void, CustomersResponse> {
+public class GetCustomersHandler implements RequestHandler<String, CustomersResponse> {
     private DynamoDB dynamoDB;
-    private String DYNAMODB_TABLE_NAME = "Customer";
+    private static String DYNAMODB_TABLE_NAME = "Customer";
 
-    private String amazonDynamoDBEndpoint = "dynamodb.eu-west-3.amazonaws.com";
-    private String amazonDynamoDBRegion = "eu-west-3";
+    private static String amazonDynamoDBEndpoint = "dynamodb.eu-west-3.amazonaws.com";
+    private static String amazonDynamoDBRegion = "eu-west-3";
 
     @Override
-    public CustomersResponse handleRequest(Void unused, Context context) {
+    public CustomersResponse handleRequest(String input, Context context) {
         initDynamoDbClient();
         initObjectMapper();
 
-
         Table table = dynamoDB.getTable(DYNAMODB_TABLE_NAME);
-
         ScanSpec scanSpec = new ScanSpec()
+                // ok
+                .withFilterExpression("contains(#name,:name)")
+                .withNameMap(new NameMap().with("#name", "name"))
+                .withValueMap(new ValueMap()
+                        .withString(":name", input)
+                );
+
+
+                // ok
                 //.withProjectionExpression("#id")
-                .withFilterExpression("#id between :start_id and :end_id")
+                /*  .withFilterExpression("#id between :start_id and :end_id")
                 .withNameMap(new NameMap().with("#id", "id"))
                 .withValueMap(new ValueMap()
                         .withString(":start_id", "1a872987-e77f-422d-902e-c539b1394a5d")
                         .withString(":end_id", "1a872987-e77f-422d-902e-c539b1394a5d")
-                );
+                );*/
 
-        ItemCollection<ScanOutcome> items = table.scan(scanSpec);
+       ItemCollection<ScanOutcome> items = table.scan(scanSpec);
 
         List<Customer> customers = new ArrayList();
 
@@ -57,6 +64,7 @@ public class GetCustomersHandler implements RequestHandler<Void, CustomersRespon
 
         CustomersResponse customersResponse = new CustomersResponse();
         customersResponse.setItems(customers);
+        customersResponse.setMessage("Scan result : "+customers.size()+" items!");
 
         return customersResponse;
     }
@@ -92,4 +100,6 @@ public class GetCustomersHandler implements RequestHandler<Void, CustomersRespon
                 .build();
         this.dynamoDB = new DynamoDB(client);
     }
+
+
 }

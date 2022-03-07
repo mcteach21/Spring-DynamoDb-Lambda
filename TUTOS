@@ -6,3 +6,7 @@ https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/JavaDocumentAPI
 
 - Maven :
 https://www.jetbrains.com/help/idea/work-with-maven-goals.html#run_goal
+
+* NoSQL Workbench
+
+==> generate operations (scan, query, putitem..etc) code (java, python, js)!

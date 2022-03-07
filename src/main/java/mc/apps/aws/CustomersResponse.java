@@ -6,5 +6,6 @@ import java.util.List;
 @Data
 public class CustomersResponse {
     List<Customer> items;
+    String message;
 
 }
